@@ -79,12 +79,18 @@ If outfit is empty or missing, return a descriptive error message. string — do
 
 **How does your agent decide which tool to call next?**
 <!-- Describe the logic your planning loop uses. What does it look at? What conditions change its behavior? How does it know when it's done? -->
-Initialize the session with _new_session().
-Parse the user's query to extract a description, size, and max_price.
-calls search_listing with the parsed parameters.
-Select the item to use (e.g., the top result).  Store it in session["selected_item"]. If results > 0, it calls suggest_outfit using the top result. If results == 0, it terminates with an apology. 
-Call suggest_outfit() with the selected item and wardrobe. Store the result in session["outfit_suggestion"].
-Call create_fit_card() with the outfit suggestion and selected item. Store the result in session["fit_card"].
+   Initialize the session with _new_session().
+   
+   Parse the user's query to extract a description, size, and max_price.
+   
+   calls search_listing with the parsed parameters.
+   
+   Select the item to use (e.g., the top result).  Store it in session["selected_item"]. If results > 0, it calls suggest_outfit using the top result. If results == 0, it terminates with an apology. 
+   
+   Call suggest_outfit() with the selected item and wardrobe. Store the result in session["outfit_suggestion"].
+   
+   Call create_fit_card() with the outfit suggestion and selected item. Store the result in session["fit_card"].
+   
 ---
 
 ## State Management
