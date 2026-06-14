@@ -79,7 +79,12 @@ If outfit is empty or missing, return a descriptive error message. string — do
 
 **How does your agent decide which tool to call next?**
 <!-- Describe the logic your planning loop uses. What does it look at? What conditions change its behavior? How does it know when it's done? -->
-
+Initialize the session with _new_session().
+Parse the user's query to extract a description, size, and max_price.
+calls search_listing with the parsed parameters.
+Select the item to use (e.g., the top result).  Store it in session["selected_item"]. If results > 0, it calls suggest_outfit using the top result. If results == 0, it terminates with an apology. 
+Call suggest_outfit() with the selected item and wardrobe. Store the result in session["outfit_suggestion"].
+Call create_fit_card() with the outfit suggestion and selected item. Store the result in session["fit_card"].
 ---
 
 ## State Management
@@ -95,9 +100,9 @@ For each tool, describe the specific failure mode you're handling and what the a
 
 | Tool | Failure mode | Agent response |
 |------|-------------|----------------|
-| search_listings | No results match the query | |
-| suggest_outfit | Wardrobe is empty | |
-| create_fit_card | Outfit input is missing or incomplete | |
+| search_listings | No results match the query | "No items found. Try widening your price range or search terms." |
+| suggest_outfit | Wardrobe is empty | "Found [Item]! Since your closet is empty, try styling this with classic denim or black trousers." |
+| create_fit_card | Outfit input is missing or incomplete | "Error: Could not generate a caption because the outfit suggestion failed."|
 
 ---
 
@@ -111,7 +116,19 @@ For each tool, describe the specific failure mode you're handling and what the a
      ASCII art, a Mermaid diagram (https://mermaid.js.org/syntax/flowchart.html), or an embedded
      sketch are all fine. You'll share this diagram with an AI tool when asking it to implement
      the planning loop and each individual tool. -->
-
+```mermaid
+graph TD
+    A[User Input] --> B[run_agent]
+    B --> C[_new_session]
+    C --> D{search_listings}
+    D -- Results --> E[Update session: active_listing]
+    E --> F[suggest_outfit]
+    F --> G[Update session: outfit_suggestion]
+    G --> H[create_fit_card]
+    H --> I[Final session object]
+    D -- No Results --> J[Update session: error]
+    F -- No Wardrobe --> K[Update session: general advice]
+```
 ---
 
 ## AI Tool Plan
