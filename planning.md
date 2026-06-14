@@ -79,17 +79,22 @@ If outfit is empty or missing, return a descriptive error message. string — do
 
 **How does your agent decide which tool to call next?**
 <!-- Describe the logic your planning loop uses. What does it look at? What conditions change its behavior? How does it know when it's done? -->
-   Initialize the session with _new_session().
-   
-   Parse the user's query to extract a description, size, and max_price.
-   
-   calls search_listing with the parsed parameters.
-   
-   Select the item to use (e.g., the top result).  Store it in session["selected_item"]. If results > 0, it calls suggest_outfit using the top result. If results == 0, it terminates with an apology. 
-   
-   Call suggest_outfit() with the selected item and wardrobe. Store the result in session["outfit_suggestion"].
-   
-   Call create_fit_card() with the outfit suggestion and selected item. Store the result in session["fit_card"].
+
+     Initialize: Call _new_session(query, wardrobe) to create the state dictionary.
+
+     Parse: Extract the description, size, and max_price from the user's natural language query using regex. Store these in session["parsed"].
+
+     Execute Search: Pass the parsed parameters into search_listings(). Store the returned list in session["search_results"].
+
+     Conditional Branch (Check Results): * If session["search_results"] is empty: Set session["error"] = "No items found matching your criteria. Try widening your price range or removing the size filter." Return the session early and terminate the loop.
+
+     If session["search_results"] is NOT empty: Set session["selected_item"] = session["search_results"][0] and proceed to the next step.
+
+     Execute Outfit Generation: Pass session["selected_item"] and session["wardrobe"] into suggest_outfit(). Store the returned string in session["outfit_suggestion"].
+
+     Execute Fit Card Generation: Pass session["outfit_suggestion"] and session["selected_item"] into create_fit_card(). Store the returned string in session["fit_card"].
+
+     Complete: Return the fully populated session dictionary.
    
 ---
 
@@ -133,16 +138,21 @@ For each tool, describe the specific failure mode you're handling and what the a
      the planning loop and each individual tool. -->
 ```mermaid
 graph TD
-    A[User Input] --> B[run_agent]
-    B --> C[_new_session]
+    A[User Query & Wardrobe] --> B[Planning Loop: run_agent]
+    B --> C[Parse Query]
     C --> D{search_listings}
-    D -- Results --> E[Update session: active_listing]
-    E --> F[suggest_outfit]
-    F --> G[Update session: outfit_suggestion]
-    G --> H[create_fit_card]
-    H --> I[Final session object]
-    D -- No Results --> J[Update session: error]
-    F -- No Wardrobe --> K[Update session: general advice]
+
+    D -- "results = []" --> E[Session: error = 'No items found...']
+    E --> F[Return Session Early]
+    
+    D -- "results = [item, ...]" --> G[Session: selected_item = results[0]]
+    G --> H[suggest_outfit]
+    
+    H --> I[Session: outfit_suggestion = '...']
+    I --> J[create_fit_card]
+    
+    J --> K[Session: fit_card = '...']
+    K --> L[Return Final Session]
 ```
 ---
 
