@@ -97,6 +97,15 @@ If outfit is empty or missing, return a descriptive error message. string — do
 
 **How does information from one tool get passed to the next?**
 <!-- Describe how your agent stores and accesses state within a session. What data is tracked? How is it passed between tool calls? -->
+The agent uses a dictionary, initialized via _new_session(), to store and pass state.
+
+The raw query is broken into description, size, and max_price, which are stored in session["parsed"].
+
+These parsed parameters are passed as arguments into search_listings(). The first returned listing is saved to session["selected_item"].
+
+session["selected_item"] and the original session["wardrobe"] are passed into suggest_outfit(). The resulting string is saved to session["outfit_suggestion"], which is then immediately passed alongside session["selected_item"] into create_fit_card().
+
+If any step fails (e.g., search returns an empty list), session["error"] is populated with a descriptive string, and the loop terminates early, returning the current session state back to the UI.
 
 ---
 
@@ -151,8 +160,22 @@ graph TD
      before trusting it" is a plan. -->
 
 **Milestone 3 — Individual tool implementations:**
+Tool: Python + Groq API
+
+Input: I will provide the tool specifications from this document alongside the stubbed functions in tools.py.
+
+Task: Implement the search_listings filtering and keyword-scoring logic using standard Python structures. For suggest_outfit and create_fit_card, implement the Groq API calls (e.g., client.chat.completions.create) using custom system prompts based directly on the conditions defined in the spec.
+
+Verification: I will write isolated test scripts calling each function with mock inputs (e.g., passing get_example_wardrobe() to suggest_outfit) and print the outputs to ensure edge cases (like an empty wardrobe or missing outfit strings) resolve exactly as described in the Error Handling section.
 
 **Milestone 4 — Planning loop and state management:**
+Tool: Python (Regex / String manipulation)
+
+Input: The state management plan and architecture flowchart from this document, plus the stubbed run_agent() function.
+
+Task: Implement query parsing using basic regex to extract sizes and prices, then write the sequential logic to chain search_listings, suggest_outfit, and create_fit_card while actively updating the session dictionary.
+
+Verification: I will execute the agent.py CLI tests at the bottom of the file to verify both the happy path (finding a graphic tee) and the no-results path (designer ballgown under $5), ensuring session["error"] catches the failure properly.
 
 ---
 
@@ -164,12 +187,18 @@ Write out what a full user interaction looks like from start to finish — tool 
 
 **Step 1:**
 <!-- What does the agent do first? Which tool is called? With what input? -->
+The agent parses the user's query. It extracts description = "vintage graphic tee", max_price = 30.0, and size = None. It calls search_listings("vintage graphic tee", size=None, max_price=30.0).
 
 **Step 2:**
 <!-- What happens next? What was returned from step 1? What tool is called now? -->
+search_listings filters the mock dataset and scores the items, returning a list of matches. The top result, "lst_006" (Graphic Tee — 2003 Tour Bootleg Style for $24.00), is saved to session["selected_item"]. The agent then calls suggest_outfit(selected_item, wardrobe).
 
 **Step 3:**
 <!-- Continue until the full interaction is complete -->
+suggest_outfit constructs a prompt for the LLM featuring the bootleg tee and the user's existing wardrobe items. The LLM returns a styling suggestion: "Pair the bootleg graphic tee with your baggy straight-leg dark wash jeans and chunky white sneakers for a relaxed, streetwear-inspired 90s silhouette." This is stored in session["outfit_suggestion"]. The agent calls create_fit_card(outfit_suggestion, selected_item). create_fit_card sends the outfit string and item details to the LLM. It generates an authentic caption, storing it in session["fit_card"].
 
 **Final output to user:**
 <!-- What does the user actually see at the end? -->
+
+Final output to user:
+The user sees the bootleg tee listing details in the first panel, the specific styling advice using their jeans and sneakers in the second panel, and a trendy, ready-to-share caption mentioning the $24 Depop find in the third panel.
